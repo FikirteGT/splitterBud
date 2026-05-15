@@ -1,0 +1,118 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isMember(workspaceId) {
+      return isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.members;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Validation Blueprints ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email']) 
+        && data.keys().size() <= 7
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 200;
+    }
+
+    function isValidWorkspace(data) {
+      return data.keys().hasAll(['name', 'joinCode', 'members', 'membersList'])
+        && data.keys().size() <= 8
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.joinCode is string && data.joinCode.size() == 6
+        && data.members is list && data.members.size() >= 1 && data.members.size() <= 2
+        && data.membersList is map;
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasAll(['amount', 'paidBy', 'expenseDate', 'creatorId'])
+        && data.keys().size() <= 12
+        && data.amount is number && data.amount >= 0 && data.amount <= 1000000
+        && data.paidBy is string && data.paidBy.size() > 0
+        && data.expenseDate is string && data.expenseDate.size() <= 20
+        && data.creatorId == request.auth.uid;
+    }
+
+    function isValidPeriod(data) {
+      return data.keys().hasAll(['startDate', 'endDate', 'isSettled'])
+        && data.keys().size() <= 7
+        && data.isSettled is bool;
+    }
+
+    // --- Rules ---
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId);
+    }
+
+    match /workspaces/{workspaceId} {
+      allow get: if isMember(workspaceId);
+      allow list: if isSignedIn() && request.auth.uid in resource.data.members;
+      
+      allow create: if isSignedIn() 
+        && isValidWorkspace(incoming())
+        && request.auth.uid in incoming().members;
+      
+      allow update: if isSignedIn() && isValidWorkspace(incoming());
+    }
+
+    match /workspaces/{workspaceId}/expenses/{expenseId} {
+      allow read: if isMember(workspaceId);
+      allow create: if isMember(workspaceId) && isValidExpense(incoming());
+      allow update: if isMember(workspaceId) 
+        && isValidExpense(incoming())
+        && incoming().creatorId == existing().creatorId
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'description', 'category', 'paidBy', 'expenseDate', 'updatedAt'])
+        );
+      allow delete: if isMember(workspaceId) && existing().creatorId == request.auth.uid;
+    }
+
+    match /workspaces/{workspaceId}/periods/{periodId} {
+      allow read: if isMember(workspaceId);
+      allow create: if isMember(workspaceId) && isValidPeriod(incoming());
+      allow update: if isMember(workspaceId)
+        && isValidPeriod(incoming())
+        && !existing().isSettled // Lock terminal state
+        && incoming().diff(existing()).affectedKeys().hasOnly(['isSettled', 'settledAt', 'settledBy']);
+    }
+
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /joinCodes/{code} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(incoming().workspaceId);
+      allow delete: if false; // Only system can prune or let them sit
+    }
+  }
+}

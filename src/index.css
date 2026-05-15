@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark-bg: #0a0a0a;
+  --color-dark-card: #111111;
+  --color-dark-inner: #151515;
+  --color-emerald-accent: #10b981;
+  --color-indigo-accent: #6366f1;
+  --color-amber-accent: #f59e0b;
+  
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-dark-bg text-gray-200 antialiased;
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Friends Expense Tracker",
+  "description": "A shared expense tracking app for exactly two friends with 50/50 splitting and weekly settlements.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
