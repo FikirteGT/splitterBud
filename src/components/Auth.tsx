@@ -4,13 +4,11 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   updateProfile,
-  GoogleAuthProvider,
-  signInWithPopup,
   signInAnonymously
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { motion } from 'motion/react';
-import { LogIn, UserPlus, AlertCircle, Chrome, UserCircle } from 'lucide-react';
+import { LogIn, AlertCircle, UserCircle } from 'lucide-react';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -18,40 +16,6 @@ export default function Auth() {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      const userRef = doc(db, 'users', user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        await setDoc(userRef, {
-          name: user.displayName || 'Friend',
-          email: user.email,
-          createdAt: serverTimestamp(),
-          workspaceId: null
-        });
-      }
-    } catch (err: any) {
-      if (err.code === 'auth/operation-not-allowed') {
-        setError('Google login is not enabled in Firebase Console.');
-      } else if (err.code === 'auth/popup-closed-by-user') {
-        setError('Sign-in cancelled. Please try again.');
-      } else if (err.code === 'auth/account-exists-with-different-credential') {
-        setError('An account already exists with this email but a different sign-in method.');
-      } else {
-        setError(err.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleGuestSignIn = async () => {
     setError('');
@@ -146,15 +110,6 @@ export default function Auth() {
         )}
 
         <div className="space-y-4">
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            className="w-full py-5 bg-white text-dark-bg rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-gray-200 transition-all active:scale-[0.98] disabled:opacity-50"
-          >
-            <Chrome className="w-5 h-5" />
-            Sign in with Google
-          </button>
-
           <button
             onClick={handleGuestSignIn}
             disabled={loading}

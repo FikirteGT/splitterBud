@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
 import Auth from './components/Auth.tsx';
 import WorkspaceSetup from './components/WorkspaceSetup.tsx';
@@ -15,6 +15,7 @@ export const AuthContext = createContext<any>(null);
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [workspace, setWorkspace] = useState<any>(null);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -53,20 +54,20 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!user?.workspaceId) {
+    if (!activeWorkspaceId) {
       setWorkspace(null);
       return;
     }
 
-    const wsRef = doc(db, 'workspaces', user.workspaceId);
+    const wsRef = doc(db, 'workspaces', activeWorkspaceId);
     const unsubscribeWS = onSnapshot(wsRef, (wsSnap) => {
       if (wsSnap.exists()) {
         setWorkspace({ id: wsSnap.id, ...wsSnap.data() });
       }
-    }, (err) => handleFirestoreError(err, OperationType.GET, `workspaces/${user.workspaceId}`));
+    }, (err) => handleFirestoreError(err, OperationType.GET, `workspaces/${activeWorkspaceId}`));
 
     return () => unsubscribeWS();
-  }, [user?.workspaceId]);
+  }, [activeWorkspaceId]);
 
   if (loading) {
     return (
@@ -84,16 +85,16 @@ export default function App() {
     );
   }
 
-  if (!user.workspaceId) {
+  if (!activeWorkspaceId) {
     return (
-      <AuthContext.Provider value={{ user, setUser, setWorkspace }}>
+      <AuthContext.Provider value={{ user, setUser, setWorkspace, setActiveWorkspaceId }}>
         <WorkspaceSetup />
       </AuthContext.Provider>
     );
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser, workspace, setWorkspace }}>
+    <AuthContext.Provider value={{ user, setUser, workspace, setWorkspace, setActiveWorkspaceId }}>
       <div className="flex h-screen bg-dark-bg font-sans overflow-hidden">
         <Navbar onToggleNotifications={() => setShowNotifications(prev => !prev)} />
         

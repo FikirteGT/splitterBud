@@ -1,19 +1,14 @@
 import { useContext } from 'react';
 import { AuthContext } from '../App.tsx';
-import { auth, db } from '../lib/firebase';
+import { auth } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { LogOut, Bell, LayoutDashboard, History, Users, DoorOpen } from 'lucide-react';
+import { LogOut, Bell, LayoutDashboard, History, Users, ArrowLeftRight } from 'lucide-react';
 
 export default function Navbar({ onToggleNotifications }: { onToggleNotifications: () => void }) {
-  const { user, workspace } = useContext(AuthContext);
+  const { user, workspace, setActiveWorkspaceId } = useContext(AuthContext);
 
   const handleLogout = () => signOut(auth);
-
-  const handleLeaveWorkspace = async () => {
-    if (!confirm('Leave this workspace? You can join or create a new one.')) return;
-    await setDoc(doc(db, 'users', user.id), { workspaceId: null }, { merge: true });
-  };
+  const handleSwitchWorkspace = () => setActiveWorkspaceId(null);
 
   return (
     <nav className="w-64 border-r border-white/10 bg-dark-card flex flex-col h-full shrink-0 hidden md:flex">
@@ -60,11 +55,11 @@ export default function Navbar({ onToggleNotifications }: { onToggleNotification
           </div>
         </div>
         <button 
-          onClick={handleLeaveWorkspace}
+          onClick={handleSwitchWorkspace}
           className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold text-gray-400 hover:text-amber-400 hover:bg-amber-400/5 rounded-lg border border-transparent hover:border-amber-400/20 transition-all mb-2"
         >
-          <DoorOpen className="w-3.5 h-3.5" />
-          Leave Workspace
+          <ArrowLeftRight className="w-3.5 h-3.5" />
+          Switch Workspace
         </button>
         <button 
           onClick={handleLogout}
