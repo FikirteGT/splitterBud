@@ -82,6 +82,7 @@ service cloud.firestore {
         && request.auth.uid in incoming().members;
       
       allow update: if isSignedIn() && isValidWorkspace(incoming());
+      allow delete: if isMember(workspaceId);
     }
 
     match /workspaces/{workspaceId}/expenses/{expenseId} {

@@ -11,11 +11,13 @@ import {
   query,
   where,
   getDocs,
+  deleteDoc,
   serverTimestamp 
 } from 'firebase/firestore';
 import { motion } from 'motion/react';
 import { signOut } from 'firebase/auth';
-import { Plus, Hash, AlertCircle, LogOut, ChevronRight, Users } from 'lucide-react';
+import { Plus, Hash, AlertCircle, LogOut, ChevronRight, Users, Trash2 } from 'lucide-react';
+
 
 export default function WorkspaceSetup() {
   const { user, setActiveWorkspaceId } = useContext(AuthContext);
@@ -26,6 +28,7 @@ export default function WorkspaceSetup() {
   const [loading, setLoading] = useState(false);
   const [workspaces, setWorkspaces] = useState<any[]>([]);
   const [loadingWorkspaces, setLoadingWorkspaces] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -71,6 +74,20 @@ export default function WorkspaceSetup() {
       handleFirestoreError(err, OperationType.WRITE, 'workspaces');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (wsId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Delete this workspace? This cannot be undone.')) return;
+    setDeletingId(wsId);
+    try {
+      await deleteDoc(doc(db, 'workspaces', wsId));
+      setWorkspaces(prev => prev.filter(w => w.id !== wsId));
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -141,7 +158,16 @@ export default function WorkspaceSetup() {
                       <p className="text-xs text-gray-500 font-mono uppercase tracking-widest">{ws.joinCode} · {ws.members?.length}/2 members</p>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-emerald-accent transition-colors" />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => handleDelete(ws.id, e)}
+                      disabled={deletingId === ws.id}
+                      className="p-2 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-emerald-accent transition-colors" />
+                  </div>
                 </button>
               ))}
             </div>
