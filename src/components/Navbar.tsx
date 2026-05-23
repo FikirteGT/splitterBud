@@ -6,7 +6,7 @@ import { doc, deleteDoc } from 'firebase/firestore';
 import { LogOut, Bell, LayoutDashboard, History, Users, ArrowLeftRight, Trash2 } from 'lucide-react';
 
 export default function Navbar({ onToggleNotifications }: { onToggleNotifications: () => void }) {
-  const { user, workspace, setActiveWorkspaceId } = useContext(AuthContext);
+  const { user, workspace, setActiveWorkspaceId, activePage, setActivePage } = useContext(AuthContext);
 
   const handleLogout = () => signOut(auth);
   const handleSwitchWorkspace = () => setActiveWorkspaceId(null);
@@ -31,15 +31,23 @@ export default function Navbar({ onToggleNotifications }: { onToggleNotification
         </div>
         
         <ul className="space-y-2">
-          <li className="flex items-center gap-3 text-emerald-accent font-semibold bg-emerald-accent/10 p-2.5 rounded-xl border border-emerald-accent/20 cursor-pointer">
+          <li onClick={() => setActivePage('dashboard')} className={`flex items-center gap-3 font-semibold p-2.5 rounded-xl border cursor-pointer transition-all ${
+            activePage === 'dashboard'
+              ? 'text-emerald-accent bg-emerald-accent/10 border-emerald-accent/20'
+              : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+          }`}>
             <LayoutDashboard className="w-5 h-5" />
             Dashboard
           </li>
-          <li className="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-white/5 transition-all p-2.5 rounded-xl cursor-not-allowed opacity-50">
+          <li onClick={() => setActivePage('history')} className={`flex items-center gap-3 font-semibold p-2.5 rounded-xl border cursor-pointer transition-all ${
+            activePage === 'history'
+              ? 'text-emerald-accent bg-emerald-accent/10 border-emerald-accent/20'
+              : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+          }`}>
             <History className="w-5 h-5" />
             History
           </li>
-          <li className="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-white/5 transition-all p-2.5 rounded-xl cursor-not-allowed opacity-50">
+          <li className="flex items-center gap-3 text-gray-400 hover:text-white hover:bg-white/5 transition-all p-2.5 rounded-xl cursor-not-allowed opacity-50 border border-transparent">
             <Users className="w-5 h-5" />
             Partners
           </li>

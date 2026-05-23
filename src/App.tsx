@@ -7,6 +7,7 @@ import WorkspaceSetup from './components/WorkspaceSetup.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import ExpenseList from './components/ExpenseList.tsx';
 import Navbar from './components/Navbar.tsx';
+import ActivityLog from './components/ActivityLog.tsx';
 import Notifications from './components/Notifications.tsx';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -18,6 +19,7 @@ export default function App() {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [activePage, setActivePage] = useState<'dashboard' | 'history'>('dashboard');
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
@@ -94,14 +96,20 @@ export default function App() {
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser, workspace, setWorkspace, setActiveWorkspaceId }}>
+    <AuthContext.Provider value={{ user, setUser, workspace, setWorkspace, setActiveWorkspaceId, activePage, setActivePage }}>
       <div className="flex h-screen bg-dark-bg font-sans overflow-hidden">
         <Navbar onToggleNotifications={() => setShowNotifications(prev => !prev)} />
         
         <main className="flex-1 flex flex-col overflow-y-auto">
           <div className="max-w-7xl w-full mx-auto px-6 py-8 space-y-8">
-            <Dashboard />
-            <ExpenseList />
+            {activePage === 'dashboard' ? (
+              <>
+                <Dashboard />
+                <ExpenseList />
+              </>
+            ) : (
+              <ActivityLog />
+            )}
           </div>
         </main>
 
