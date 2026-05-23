@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { collection, query, orderBy, onSnapshot, doc, writeBatch, getDocs, where, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { AuthContext } from '../App.tsx';
 import { auth, db as firebaseDb } from '../lib/firebase';
 import { motion } from 'motion/react';
@@ -17,9 +17,12 @@ export default function Notifications({ onClose }: { onClose: () => void }) {
 
   const handleReject = async (n: any) => {
     if (!workspace?.id || !n.expenseId) return;
-    // Revert to old amount
     await updateDoc(doc(firebaseDb, 'workspaces', workspace.id, 'expenses', n.expenseId), { amount: n.oldAmount });
     await updateDoc(doc(firebaseDb, 'users', user.id, 'notifications', n.id), { isRead: true, approved: false });
+  };
+
+  const handleDismiss = async (n: any) => {
+    await updateDoc(doc(firebaseDb, 'users', user.id, 'notifications', n.id), { isRead: true });
   };
 
   useEffect(() => {
@@ -34,21 +37,6 @@ export default function Notifications({ onClose }: { onClose: () => void }) {
       setNotifs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     }, (err) => handleFirestoreError(err, OperationType.LIST, `users/${user.id}/notifications`));
-
-    // Mark as read
-    const markAllRead = async () => {
-      const unreadQ = query(
-        collection(db, 'users', user.id, 'notifications'), 
-        where('isRead', '==', false)
-      );
-      const snap = await getDocs(unreadQ);
-      if (!snap.empty) {
-        const batch = writeBatch(db);
-        snap.forEach(d => batch.update(d.ref, { isRead: true }));
-        await batch.commit();
-      }
-    };
-    markAllRead();
 
     return () => unsubscribe();
   }, [user?.id]);
@@ -140,6 +128,14 @@ export default function Notifications({ onClose }: { onClose: () => void }) {
                         <ThumbsDown className="w-3 h-3" /> Revert
                       </button>
                     </div>
+                  )}
+                  {!n.requiresApproval && !n.isRead && (
+                    <button
+                      onClick={() => handleDismiss(n)}
+                      className="mt-2 text-[10px] font-bold uppercase tracking-widest text-gray-600 hover:text-gray-400 transition-colors"
+                    >
+                      Dismiss
+                    </button>
                   )}
                   {n.isRead && n.approved !== undefined && (
                     <p className={`text-[10px] font-bold uppercase tracking-widest mt-2 ${n.approved ? 'text-emerald-400' : 'text-red-400'}`}>

@@ -5,7 +5,7 @@ import { signOut, deleteUser } from 'firebase/auth';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { LogOut, Bell, LayoutDashboard, History, Users, ArrowLeftRight, Trash2 } from 'lucide-react';
 
-export default function Navbar({ onToggleNotifications }: { onToggleNotifications: () => void }) {
+export default function Navbar({ onToggleNotifications, unreadCount }: { onToggleNotifications: () => void; unreadCount: number }) {
   const { user, workspace, setActiveWorkspaceId, activePage, setActivePage } = useContext(AuthContext);
 
   const handleLogout = () => signOut(auth);
@@ -55,10 +55,15 @@ export default function Navbar({ onToggleNotifications }: { onToggleNotification
 
         <button 
           onClick={onToggleNotifications}
-          className="mt-8 w-full flex items-center gap-3 text-gray-400 hover:text-white hover:bg-white/5 transition-all p-2.5 rounded-xl"
+          className="mt-8 w-full flex items-center gap-3 text-gray-400 hover:text-white hover:bg-white/5 transition-all p-2.5 rounded-xl relative"
         >
           <Bell className="w-5 h-5" />
           Notifications
+          {unreadCount > 0 && (
+            <span className="ml-auto min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/30">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </button>
       </div>
 

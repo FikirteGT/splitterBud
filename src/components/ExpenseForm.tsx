@@ -55,10 +55,14 @@ export default function ExpenseForm({ expense, onClose, onSuccess }: any) {
           expenseDescription: payload.description || 'expense',
           amount: payload.amount, paidByName, createdAt: serverTimestamp()
         });
-        await sendNotification('EDIT_EXPENSE',
-          `${actorName} edited "${payload.description || 'expense'}" from $${expense.amount.toFixed(2)} to $${payload.amount.toFixed(2)} — paid by ${paidByName}`,
-          { expenseId: expense.id, oldAmount: expense.amount, newAmount: payload.amount, requiresApproval: true }
-        );
+        // Only send approval request if editing someone else's expense
+        const isOthersExpense = expense.creatorId !== auth.currentUser?.uid;
+        if (isOthersExpense) {
+          await sendNotification('EDIT_EXPENSE',
+            `${actorName} edited your "${payload.description || 'expense'}" from $${expense.amount.toFixed(2)} to $${payload.amount.toFixed(2)} — paid by ${paidByName}`,
+            { expenseId: expense.id, oldAmount: expense.amount, newAmount: payload.amount, requiresApproval: true }
+          );
+        }
       } else {
         const expColl = collection(db, 'workspaces', workspace.id, 'expenses');
         const newExp = await addDoc(expColl, {

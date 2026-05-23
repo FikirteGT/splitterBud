@@ -19,6 +19,17 @@ export default function App() {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const q = query(
+      collection(db, 'users', user.id, 'notifications'),
+      where('isRead', '==', false)
+    );
+    const unsub = onSnapshot(q, (snap) => setUnreadCount(snap.size));
+    return () => unsub();
+  }, [user?.id]);
   const [activePage, setActivePage] = useState<'dashboard' | 'history'>('dashboard');
 
   useEffect(() => {
@@ -98,7 +109,7 @@ export default function App() {
   return (
     <AuthContext.Provider value={{ user, setUser, workspace, setWorkspace, setActiveWorkspaceId, activePage, setActivePage }}>
       <div className="flex h-screen bg-dark-bg font-sans overflow-hidden">
-        <Navbar onToggleNotifications={() => setShowNotifications(prev => !prev)} />
+        <Navbar onToggleNotifications={() => setShowNotifications(prev => !prev)} unreadCount={unreadCount} />
         
         <main className="flex-1 flex flex-col overflow-y-auto">
           <div className="max-w-7xl w-full mx-auto px-6 py-8 space-y-8">
