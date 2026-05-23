@@ -1,14 +1,24 @@
 import { useContext } from 'react';
 import { AuthContext } from '../App.tsx';
-import { auth } from '../lib/firebase';
-import { signOut } from 'firebase/auth';
-import { LogOut, Bell, LayoutDashboard, History, Users, ArrowLeftRight } from 'lucide-react';
+import { auth, db } from '../lib/firebase';
+import { signOut, deleteUser } from 'firebase/auth';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { LogOut, Bell, LayoutDashboard, History, Users, ArrowLeftRight, Trash2 } from 'lucide-react';
 
 export default function Navbar({ onToggleNotifications }: { onToggleNotifications: () => void }) {
   const { user, workspace, setActiveWorkspaceId } = useContext(AuthContext);
 
   const handleLogout = () => signOut(auth);
   const handleSwitchWorkspace = () => setActiveWorkspaceId(null);
+  const handleDeleteAccount = async () => {
+    if (!confirm('Permanently delete your account? This cannot be undone.')) return;
+    try {
+      await deleteDoc(doc(db, 'users', user.id));
+      await deleteUser(auth.currentUser!);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
 
   return (
     <nav className="w-64 border-r border-white/10 bg-dark-card flex flex-col h-full shrink-0 hidden md:flex">
@@ -67,6 +77,13 @@ export default function Navbar({ onToggleNotifications }: { onToggleNotification
         >
           <LogOut className="w-3.5 h-3.5" />
           Sign Out
+        </button>
+        <button 
+          onClick={handleDeleteAccount}
+          className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold text-gray-400 hover:text-red-500 hover:bg-red-500/5 rounded-lg border border-transparent hover:border-red-500/20 transition-all mt-1"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Delete Account
         </button>
       </div>
     </nav>
